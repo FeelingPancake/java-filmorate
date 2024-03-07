@@ -8,52 +8,59 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exceptions.AlreadyExistsException;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
-import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 
 import javax.validation.Valid;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @Slf4j
-@RequestMapping("/films")
-public class FilmController {
-
+@RequestMapping("/users")
+public class UserController {
     private static long ID = 1;
-    private final Map<Long, Film> films = new HashMap<>();
+    private final Map<Long, User> users = new HashMap<>();
 
     @GetMapping("/{id}")
-    public Film getFilm(@PathVariable Long id) {
-        return films.get(id);
+    public User getUser(@PathVariable Long id) {
+        return users.get(id);
     }
 
     @GetMapping
-    public Collection<Film> getFilms() {
-        return films.values();
+    public Collection<User> getUsers() {
+        return users.values();
     }
 
     @PostMapping
-    public Film addFilm(@Valid @RequestBody @NonNull Film filmFromRequest) {
-        if (films.containsKey(filmFromRequest.getId())) {
-            throw new AlreadyExistsException("Фильм уже есть в списке" + filmFromRequest);
+    public User addUser(@Valid @RequestBody @NonNull User userFromRequest) {
+        User user;
+
+        if (users.containsKey(userFromRequest.getId())) {
+            throw new AlreadyExistsException("Пользователь уже есть в списке:" + userFromRequest);
         }
 
-        Film film = filmFromRequest.toBuilder().id(ID++).build();
-        films.put(film.getId(), film);
-        log.info("Добавлен объект фильма {}", film);
+        if (Objects.isNull(userFromRequest.getName()) || userFromRequest.getName().isBlank()) {
+            user = userFromRequest.toBuilder().name(userFromRequest.getLogin()).id(ID++).build();
+        } else {
+            user = userFromRequest.toBuilder().name(userFromRequest.getName()).id(ID++).build();
+        }
+        users.put(user.getId(), user);
+        log.info("Добавлен объект пользователя {}", user);
 
-        return film;
+        return user;
     }
 
     @PutMapping
-    public Film updateFilm(@Valid @RequestBody @NonNull Film filmFromRequest) {
-        if (films.containsKey(filmFromRequest.getId())) {
-            films.put(filmFromRequest.getId(), filmFromRequest);
-            log.info("Обновлен или добавлен объект фильма: {}", filmFromRequest);
-            return filmFromRequest;
+    public User updateUser(@Valid @RequestBody @NonNull User userFromRequest) {
+        if (users.containsKey(userFromRequest.getId())) {
+            users.put(userFromRequest.getId(), userFromRequest);
+            log.info("Обновлен или добавлен объект пользователя: {}", userFromRequest);
+
+            return userFromRequest;
         } else {
-            throw new UpdateException("Ошибка обновления, фильма нет в списке:" + filmFromRequest);
+            throw new UpdateException("Пользователь не найден в списке:" + userFromRequest);
         }
     }
 
@@ -75,9 +82,9 @@ public class FilmController {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(AlreadyExistsException.class)
-    public Map<String, String> handleFilmExistsExceptions(AlreadyExistsException ex) {
+    public Map<String, String> handleUserExistsExceptions(AlreadyExistsException ex) {
         Map<String, String> errors = new HashMap<>();
-        log.warn("Ошибка добавления: {}", ex.getMessage());
+        log.warn("Ошибка добавления:{}", ex.getMessage());
         errors.put(ex.toString(), ex.getMessage());
 
         return errors;
@@ -87,10 +94,9 @@ public class FilmController {
     @ExceptionHandler(UpdateException.class)
     public Map<String, String> handleUpdateExceptions(UpdateException ex) {
         Map<String, String> errors = new HashMap<>();
-        log.warn("Ошибка обновления: {}", ex.getMessage());
+        log.warn("Ошибка обновления:{}", ex.getMessage());
         errors.put(ex.toString(), ex.getMessage());
 
         return errors;
     }
-
 }
