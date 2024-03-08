@@ -1,6 +1,9 @@
 package ru.yandex.practicum.filmorate.exceptions;
 
-public class AlreadyExistsException extends RuntimeException {
+import lombok.extern.slf4j.Slf4j;;
+
+@Slf4j
+public class AlreadyExistsException extends RestException {
     public AlreadyExistsException(String mes) {
         super(mes);
     }
