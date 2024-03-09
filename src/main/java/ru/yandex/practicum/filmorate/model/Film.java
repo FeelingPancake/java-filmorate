@@ -2,12 +2,10 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.Builder;
 import lombok.Value;
+import ru.yandex.practicum.filmorate.annotations.Marker;
 import ru.yandex.practicum.filmorate.annotations.ReleaseDateConstraint;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.time.LocalDate;
 
 /**
@@ -16,6 +14,8 @@ import java.time.LocalDate;
 @Value
 @Builder(toBuilder = true)
 public class Film {
+    @NotNull(groups = Marker.OnUpdate.class, message = "ID должен присутствовать при обновлении объекта")
+    @Null(groups = Marker.OnCreate.class, message = "ID должен отсутсвовать при создании объекта")
     Long id;
     @NotBlank(message = "Имя не должно быть пустым")
     String name;

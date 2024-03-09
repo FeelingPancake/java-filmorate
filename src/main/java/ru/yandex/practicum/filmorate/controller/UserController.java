@@ -1,8 +1,9 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exceptions.AlreadyExistsException;
+import ru.yandex.practicum.filmorate.annotations.Marker;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -15,9 +16,10 @@ import java.util.Map;
 @RestController
 @Slf4j
 @RequestMapping("/users")
+@Validated
 public class UserController {
-    private long id = 1;
     private final Map<Long, User> users = new HashMap<>();
+    private long id = 1;
 
     @GetMapping("/{id}")
     public User getUser(@PathVariable Long id) {
@@ -30,14 +32,11 @@ public class UserController {
     }
 
     @PostMapping
+    @Validated({Marker.OnCreate.class})
     public User addUser(@Valid @RequestBody User userFromRequest) {
         User user;
         String nameUserFromRequest = userFromRequest.getName();
         String loginUserFromRequest = userFromRequest.getLogin();
-
-        if (users.containsKey(userFromRequest.getId())) {
-            throw new AlreadyExistsException("Пользователь уже есть в списке:" + userFromRequest);
-        }
 
         if ((nameUserFromRequest == null) || nameUserFromRequest.isBlank()) {
             user = userFromRequest.toBuilder().name(loginUserFromRequest).id(id++).build();
@@ -51,6 +50,7 @@ public class UserController {
     }
 
     @PutMapping
+    @Validated({Marker.OnUpdate.class})
     public User updateUser(@Valid @RequestBody User userFromRequest) {
         long idForUser = userFromRequest.getId();
         if (!users.containsKey(idForUser)) {
@@ -58,7 +58,7 @@ public class UserController {
         }
 
         users.put(idForUser, userFromRequest);
-        log.info("Обновлен или добавлен объект пользователя: {}", userFromRequest);
+        log.info("Обновлен добавлен объект пользователя: {}", userFromRequest);
 
         return userFromRequest;
     }

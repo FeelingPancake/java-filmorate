@@ -1,8 +1,9 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exceptions.AlreadyExistsException;
+import ru.yandex.practicum.filmorate.annotations.Marker;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
 import ru.yandex.practicum.filmorate.model.Film;
 
@@ -15,10 +16,11 @@ import java.util.Map;
 @RestController
 @Slf4j
 @RequestMapping("/films")
+@Validated
 public class FilmController {
 
-    private long id = 1;
     private final Map<Long, Film> films = new HashMap<>();
+    private long id = 1;
 
     @GetMapping("/{id}")
     public Film getFilm(@PathVariable Long id) {
@@ -31,11 +33,8 @@ public class FilmController {
     }
 
     @PostMapping
+    @Validated({Marker.OnCreate.class})
     public Film addFilm(@Valid @RequestBody Film filmFromRequest) {
-        if (films.containsKey(filmFromRequest.getId())) {
-            throw new AlreadyExistsException("Фильм уже есть в списке" + filmFromRequest);
-        }
-
         Film film = filmFromRequest.toBuilder().id(id++).build();
         films.put(film.getId(), film);
         log.info("Добавлен объект фильма {}", film);
@@ -44,13 +43,14 @@ public class FilmController {
     }
 
     @PutMapping
+    @Validated({Marker.OnUpdate.class})
     public Film updateFilm(@Valid @RequestBody Film filmFromRequest) {
         long idForFilm = filmFromRequest.getId();
         if (!films.containsKey(idForFilm)) {
             throw new UpdateException("Ошибка обновления, фильма нет в списке:" + filmFromRequest);
         }
         films.put(idForFilm, filmFromRequest);
-        log.info("Обновлен или добавлен объект фильма: {}", filmFromRequest);
+        log.info("Обновле объект фильма: {}", filmFromRequest);
         return filmFromRequest;
     }
 }
