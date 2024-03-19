@@ -1,13 +1,12 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exceptions.FilmNotFoundException;
-import ru.yandex.practicum.filmorate.exceptions.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,39 +20,39 @@ public class FilmService {
         this.userStorage = userStorage;
     }
 
+    public Film getFilm(Long id) {
+        return filmStorage.get(id);
+    }
+
+    public Collection<Film> getFilms() {
+        return filmStorage.getAll();
+    }
+
+    public Film addFilm(Film film) {
+        return filmStorage.add(film);
+    }
+
+    public Film updateFilm(Film film) {
+        return filmStorage.update(film);
+    }
+
     public void likeFilm(Long filmId, Long userId) {
         Film film = filmStorage.get(filmId);
         User user = userStorage.get(userId);
-        if (film == null) {
-            throw new FilmNotFoundException(filmId + "");
-        }
-        if (user == null) {
-            throw new UserNotFoundException(userId + "");
-        }
-        if (!film.getLikedBy().contains(userId)) {
-            film.getLikedBy().add(userId);
-            film.setRating(film.getRating() + 1);
-        }
+
+        film.like(userId);
     }
 
     public void dislikeFilm(Long filmId, Long userId) {
         Film film = filmStorage.get(filmId);
         User user = userStorage.get(userId);
-        if (film == null) {
-            throw new FilmNotFoundException(filmId + "");
-        }
-        if (user == null) {
-            throw new UserNotFoundException(userId + "");
-        }
-        if (film.getLikedBy().contains(userId)) {
-            film.getLikedBy().remove(userId);
-            film.setRating(film.getRating() - 1);
-        }
+
+        film.dislike(userId);
     }
 
     public List<Film> getPopularFilms(int count) {
         return filmStorage.getAll().stream()
-                .sorted((f1, f2) -> Integer.compare(f1.getRating(), f2.getRating()) * -1)
+                .sorted((f1, f2) -> Integer.compare(f2.getRating(), f1.getRating()))
                 .limit(count)
                 .collect(Collectors.toList());
     }

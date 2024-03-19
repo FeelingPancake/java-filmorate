@@ -2,8 +2,8 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exceptions.FilmNotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
-import ru.yandex.practicum.filmorate.exceptions.UserNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.Collection;
@@ -22,8 +22,8 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film get(Long id) {
-        if (!films.containsKey(id)) {
-            throw new UserNotFoundException(id.toString());
+        if (!films.containsKey(id) || (films.get(id) == null)) {
+            throw new FilmNotFoundException(id.toString());
         }
         return films.get(id);
     }
@@ -57,11 +57,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film delete(Long id) {
-        if (!films.containsKey(id)) {
-            throw new UserNotFoundException(id.toString());
-        }
-        Film deletedFilm = films.get(id);
-        films.remove(id);
-        return deletedFilm;
+        return films.remove(id);
     }
 }
