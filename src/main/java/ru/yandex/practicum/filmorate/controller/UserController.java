@@ -4,31 +4,32 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.annotations.Marker;
-import ru.yandex.practicum.filmorate.exceptions.UpdateException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @RestController
 @Slf4j
 @RequestMapping("/users")
 @Validated
 public class UserController {
-    private final Map<Long, User> users = new HashMap<>();
-    private long id = 1;
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping("/{id}")
     public User getUser(@PathVariable Long id) {
-        return users.get(id);
+        return userService.getUser(id);
     }
 
     @GetMapping
     public Collection<User> getUsers() {
-        return new ArrayList<>(users.values());
+        return userService.getUsers();
     }
 
     @PostMapping
@@ -39,27 +40,45 @@ public class UserController {
         String loginUserFromRequest = userFromRequest.getLogin();
 
         if ((nameUserFromRequest == null) || nameUserFromRequest.isBlank()) {
-            user = userFromRequest.toBuilder().name(loginUserFromRequest).id(id++).build();
+            user = userFromRequest.toBuilder().name(loginUserFromRequest).build();
         } else {
-            user = userFromRequest.toBuilder().name(nameUserFromRequest).id(id++).build();
+            user = userFromRequest.toBuilder().name(nameUserFromRequest).build();
         }
-        users.put(user.getId(), user);
-        log.info("Добавлен объект пользователя {}", user);
 
-        return user;
+        return userService.addUser(user);
     }
 
     @PutMapping
     @Validated({Marker.OnUpdate.class})
     public User updateUser(@Valid @RequestBody User userFromRequest) {
-        long idForUser = userFromRequest.getId();
-        if (!users.containsKey(idForUser)) {
-            throw new UpdateException("Пользователь не найден в списке:" + userFromRequest);
-        }
+        return userService.updateUser(userFromRequest);
+    }
 
-        users.put(idForUser, userFromRequest);
-        log.info("Обновлен добавлен объект пользователя: {}", userFromRequest);
+    //PUT /users/{id}/friends/{friendId}
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable(value = "id") Long id,
+                          @PathVariable(value = "friendId") Long friendId) {
+        userService.addFriend(id, friendId);
+    }
 
-        return userFromRequest;
+    //DELETE /users/{id}/friends/{friendId}
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void deleteFriend(@PathVariable(value = "id") Long id,
+                             @PathVariable(value = "friendId") Long friendId) {
+        userService.deleteFriend(id, friendId);
+    }
+
+    //GET /users/{id}/friends
+    @GetMapping("/{id}/friends")
+    public List<User> getFriends(@PathVariable(value = "id") Long id) {
+
+        return userService.getFriendList(id);
+    }
+
+    //GET /users/{id}/friends/common/{otherId}
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable(value = "id") Long id,
+                                       @PathVariable(value = "otherId") Long otherId) {
+        return userService.findCommonFriends(id, otherId);
     }
 }
