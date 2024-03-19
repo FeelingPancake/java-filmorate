@@ -33,5 +33,18 @@ public class Film {
     private final Set<Long> likedBy = new HashSet<>();
     private int rating = 0;
 
+    public void like(long userId) {
+        if (!likedBy.contains(userId)) {
+            likedBy.add(userId);
+            rating++;
+        }
+    }
+
+    public void dislike(long userId) {
+        if (likedBy.contains(userId)) {
+            likedBy.remove(userId);
+            rating--;
+        }
+    }
 
 }

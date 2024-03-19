@@ -22,7 +22,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User get(Long id) {
-        if (!users.containsKey(id)) {
+        if (!users.containsKey(id) || (users.get(id) == null)) {
             throw new UserNotFoundException(id.toString());
         }
         return users.get(id);
@@ -57,11 +57,6 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User delete(Long id) {
-        if (!users.containsKey(id)) {
-            throw new UserNotFoundException(id.toString());
-        }
-        User deletedUser = users.get(id);
-        users.remove(id);
-        return deletedUser;
+        return users.remove(id);
     }
 }

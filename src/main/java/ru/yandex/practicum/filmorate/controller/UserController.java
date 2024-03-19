@@ -6,10 +6,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.annotations.Marker;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -18,22 +16,20 @@ import java.util.List;
 @RequestMapping("/users")
 @Validated
 public class UserController {
-    private final UserStorage userStorage;
     private final UserService userService;
 
-    public UserController(UserStorage userStorage, UserService userService) {
-        this.userStorage = userStorage;
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @GetMapping("/{id}")
     public User getUser(@PathVariable Long id) {
-        return userStorage.get(id);
+        return userService.getUser(id);
     }
 
     @GetMapping
     public Collection<User> getUsers() {
-        return userStorage.getAll();
+        return userService.getUsers();
     }
 
     @PostMapping
@@ -49,62 +45,40 @@ public class UserController {
             user = userFromRequest.toBuilder().name(nameUserFromRequest).build();
         }
 
-        return userStorage.add(user);
+        return userService.addUser(user);
     }
 
     @PutMapping
     @Validated({Marker.OnUpdate.class})
     public User updateUser(@Valid @RequestBody User userFromRequest) {
-        return userStorage.update(userFromRequest);
+        return userService.updateUser(userFromRequest);
     }
 
     //PUT /users/{id}/friends/{friendId}
     @PutMapping("/{id}/friends/{friendId}")
-    public List<User> addFriend(@PathVariable(value = "id") Long id,
-                                @PathVariable(value = "friendId") Long friendId) {
+    public void addFriend(@PathVariable(value = "id") Long id,
+                          @PathVariable(value = "friendId") Long friendId) {
         userService.addFriend(id, friendId);
-        List<User> friendList = new ArrayList<>();
-
-        for (Long friendsId : userService.getFriendList(id)) {
-            friendList.add(userStorage.get(friendsId));
-        }
-        return friendList;
     }
 
     //DELETE /users/{id}/friends/{friendId}
     @DeleteMapping("/{id}/friends/{friendId}")
-    public List<User> deleteFriend(@PathVariable(value = "id") Long id,
-                                   @PathVariable(value = "friendId") Long friendId) {
+    public void deleteFriend(@PathVariable(value = "id") Long id,
+                             @PathVariable(value = "friendId") Long friendId) {
         userService.deleteFriend(id, friendId);
-        List<User> friendList = new ArrayList<>();
-
-        for (Long friendsId : userService.getFriendList(id)) {
-            friendList.add(userStorage.get(friendsId));
-        }
-        return friendList;
-
     }
 
     //GET /users/{id}/friends
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable(value = "id") Long id) {
-        List<User> friendList = new ArrayList<>();
 
-        for (Long friendId : userService.getFriendList(id)) {
-            friendList.add(userStorage.get(friendId));
-        }
-        return friendList;
+        return userService.getFriendList(id);
     }
 
     //GET /users/{id}/friends/common/{otherId}
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> getCommonFriends(@PathVariable(value = "id") Long id,
                                        @PathVariable(value = "otherId") Long otherId) {
-        List<User> commonFriendList = new ArrayList<>();
-
-        for (Long friendId : userService.findCommonFriends(id, otherId)) {
-            commonFriendList.add(userStorage.get(friendId));
-        }
-        return commonFriendList;
+        return userService.findCommonFriends(id, otherId);
     }
 }
