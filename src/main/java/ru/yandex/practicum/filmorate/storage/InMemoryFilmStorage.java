@@ -22,10 +22,11 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film get(Long id) {
-        if (!films.containsKey(id) || (films.get(id) == null)) {
+        Film film = films.get(id);
+        if (film == null) {
             throw new FilmNotFoundException(id.toString());
         }
-        return films.get(id);
+        return film;
     }
 
     @Override
