@@ -1,5 +1,7 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import ru.yandex.practicum.filmorate.exceptions.IdNotFoundException;
+
 import java.util.Collection;
 
 public interface ModelStorage<T> {
