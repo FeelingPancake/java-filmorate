@@ -1,10 +1,12 @@
-package ru.yandex.practicum.filmorate.storage;
+package ru.yandex.practicum.filmorate.storage.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
 import ru.yandex.practicum.filmorate.exceptions.UserNotFoundException;
+import ru.yandex.practicum.filmorate.model.FriendShip;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.UserStorage;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -22,7 +24,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public User get(Long id) {
-        if (!users.containsKey(id) || (users.get(id) == null)) {
+        if (!(users.get(id) == null)) {
             throw new UserNotFoundException(id.toString());
         }
         return users.get(id);
@@ -36,27 +38,37 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User add(User obj) {
+    public Long add(User obj) {
         User user = obj.toBuilder().id(id++).build();
         users.put(user.getId(), user);
         log.info("Добавлен объект пользователя {}", user);
 
-        return user;
+        return user.getId();
     }
 
     @Override
-    public User update(User obj) {
+    public Long update(User obj) {
         long idForUser = obj.getId();
         if (!users.containsKey(idForUser)) {
             throw new UpdateException("Ошибка обновления, пользователя нет в списке:" + obj);
         }
         users.put(idForUser, obj);
         log.info("Обновлен объект пользователь: {}", obj);
-        return obj;
+        return obj.getId();
     }
 
     @Override
-    public User delete(Long id) {
-        return users.remove(id);
+    public boolean delete(Long id) {
+        return users.remove(id) != null;
+    }
+
+    @Override
+    public boolean addFriend(long userId, long friendId) {
+        return false;
+    }
+
+    @Override
+    public boolean deleteFriend(FriendShip friendShip) {
+        return false;
     }
 }

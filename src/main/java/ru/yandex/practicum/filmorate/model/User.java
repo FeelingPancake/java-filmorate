@@ -6,8 +6,9 @@ import ru.yandex.practicum.filmorate.annotations.Marker;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Value
 @Builder(toBuilder = true)
@@ -25,5 +26,15 @@ public class User {
     @PastOrPresent(message = "Нельзя родиться в будущем")
     @NotNull
     LocalDate birthday;
-    Set<Long> friendsList = new HashSet<>();
+    List<FriendShip> friendsList;
+
+    public Map<String, Object> toMap() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("email", email);
+        values.put("login", login);
+        values.put("name", name);
+        values.put("birthday", birthday);
+
+        return values;
+    }
 }
