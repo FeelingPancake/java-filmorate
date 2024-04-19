@@ -45,27 +45,33 @@ public class UserController {
             user = userFromRequest.toBuilder().name(nameUserFromRequest).build();
         }
 
-        return userService.addUser(user);
+        Long id = userService.addUser(user);
+        return userService.getUser(id);
     }
 
     @PutMapping
     @Validated({Marker.OnUpdate.class})
     public User updateUser(@Valid @RequestBody User userFromRequest) {
-        return userService.updateUser(userFromRequest);
+        Long id = userService.updateUser(userFromRequest);
+        return userService.getUser(id);
     }
 
     //PUT /users/{id}/friends/{friendId}
     @PutMapping("/{id}/friends/{friendId}")
-    public void addFriend(@PathVariable(value = "id") Long id,
-                          @PathVariable(value = "friendId") Long friendId) {
+    public List<User> addFriend(@PathVariable(value = "id") Long id,
+                                @PathVariable(value = "friendId") Long friendId) {
         userService.addFriend(id, friendId);
+
+        return userService.getFriendList(id);
     }
 
     //DELETE /users/{id}/friends/{friendId}
     @DeleteMapping("/{id}/friends/{friendId}")
-    public void deleteFriend(@PathVariable(value = "id") Long id,
-                             @PathVariable(value = "friendId") Long friendId) {
+    public List<User> deleteFriend(@PathVariable(value = "id") Long id,
+                                   @PathVariable(value = "friendId") Long friendId) {
         userService.deleteFriend(id, friendId);
+
+        return userService.getFriendList(friendId);
     }
 
     //GET /users/{id}/friends

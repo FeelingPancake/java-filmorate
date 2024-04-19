@@ -1,13 +1,16 @@
-package ru.yandex.practicum.filmorate.storage;
+package ru.yandex.practicum.filmorate.storage.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exceptions.FilmNotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.IdNotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.FilmStorage;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Repository
@@ -37,27 +40,42 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public Film add(Film obj) {
+    public Long add(Film obj) {
         Film film = obj.toBuilder().id(id++).build();
         films.put(film.getId(), film);
         log.info("Добавлен объект фильма {}", film);
 
-        return film;
+        return film.getId();
     }
 
     @Override
-    public Film update(Film obj) {
+    public Long update(Film obj) {
         long idForFilm = obj.getId();
         if (!films.containsKey(idForFilm)) {
             throw new UpdateException("Ошибка обновления, фильма нет в списке:" + obj);
         }
         films.put(idForFilm, obj);
         log.info("Обновлен объект фильма: {}", obj);
-        return obj;
+        return obj.getId();
     }
 
     @Override
-    public Film delete(Long id) {
-        return films.remove(id);
+    public boolean delete(Long id) {
+       return films.remove(id) != null;
+    }
+
+    @Override
+    public List<Film> getAll(int limit) {
+        return List.of();
+    }
+
+    @Override
+    public void likeFilm(Long userId, Long filmId) throws IdNotFoundException {
+
+    }
+
+    @Override
+    public void dislikeFilm(Long userId, Long filmId) throws IdNotFoundException {
+
     }
 }

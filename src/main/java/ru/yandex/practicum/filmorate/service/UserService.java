@@ -1,11 +1,11 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.model.FriendShip;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.UserStorage;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,44 +26,48 @@ public class UserService {
         return userStorage.getAll();
     }
 
-    public User addUser(User user) {
+    public Long addUser(User user) {
         return userStorage.add(user);
     }
 
-    public User updateUser(User user) {
+    public Long updateUser(User user) {
         return userStorage.update(user);
     }
 
     public List<User> getFriendList(long userId) {
         return userStorage.get(userId).getFriendsList().stream()
-                .map(userStorage::get)
+                .map(x -> {
+                    if (x.userId() == userId) {
+                       return userStorage.get(x.friendId());
+                    } else {
+                        return userStorage.get(x.userId());
+                    }
+                })
                 .collect(Collectors.toList());
     }
 
     public void addFriend(long userId, long friendId) {
-        User user = userStorage.get(userId);
-        User friend = userStorage.get(friendId);
-
-        user.getFriendsList().add(friendId);
-        friend.getFriendsList().add(userId);
+        userStorage.addFriend(userId, friendId);
     }
 
     public void deleteFriend(long userId, long friendId) {
-        User user = userStorage.get(userId);
-        User friend = userStorage.get(friendId);
-
-        user.getFriendsList().remove(friendId);
-        friend.getFriendsList().remove(userId);
+        for(FriendShip friendShip : userStorage.get(userId).getFriendsList()) {
+            if (friendShip.userId() == userId && friendShip.friendId() == friendId) {
+                userStorage.deleteFriend(friendShip);
+            }
+        }
     }
 
     public List<User> findCommonFriends(long userId1, long userId2) {
         User user1 = userStorage.get(userId1);
         User user2 = userStorage.get(userId2);
 
-        Set<Long> commonFriends = new HashSet<>(user1.getFriendsList());
-        commonFriends.retainAll(user2.getFriendsList());
+        Set<Long> commonFriends = user1.getFriendsList().stream().map(FriendShip::friendId).collect(Collectors.toSet());
+        commonFriends.retainAll(user2.getFriendsList().stream().map(FriendShip::friendId).collect(Collectors.toList()));
 
-        return commonFriends.stream().map(userStorage::get).collect(Collectors.toList());
+        return commonFriends.stream()
+                .map(userStorage::get)
+                .collect(Collectors.toList());
     }
 
 }

@@ -1,23 +1,21 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exceptions.FilmNotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.IdNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.UserStorage;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
 
     public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
         this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
     }
 
     public Film getFilm(Long id) {
@@ -28,32 +26,31 @@ public class FilmService {
         return filmStorage.getAll();
     }
 
-    public Film addFilm(Film film) {
+    public Long addFilm(Film film) throws IdNotFoundException {
         return filmStorage.add(film);
     }
 
-    public Film updateFilm(Film film) {
+    public Long updateFilm(Film film) {
         return filmStorage.update(film);
     }
 
-    public void likeFilm(Long filmId, Long userId) {
-        Film film = filmStorage.get(filmId);
-        User user = userStorage.get(userId);
-
-        film.like(userId);
+    public void likeFilm(Long userId, Long filmId) {
+        try {
+            filmStorage.likeFilm(userId, filmId);
+        } catch (IdNotFoundException e) {
+            throw new FilmNotFoundException(filmId + "");
+        }
     }
 
     public void dislikeFilm(Long filmId, Long userId) {
-        Film film = filmStorage.get(filmId);
-        User user = userStorage.get(userId);
-
-        film.dislike(userId);
+        try {
+            filmStorage.dislikeFilm(filmId, userId);
+        } catch (IdNotFoundException e) {
+            throw new FilmNotFoundException(filmId + "");
+        }
     }
 
     public List<Film> getPopularFilms(int count) {
-        return filmStorage.getAll().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getRating(), f1.getRating()))
-                .limit(count)
-                .collect(Collectors.toList());
+        return filmStorage.getAll(count);
     }
 }
