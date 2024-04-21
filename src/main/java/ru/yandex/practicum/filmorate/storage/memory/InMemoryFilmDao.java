@@ -2,11 +2,10 @@ package ru.yandex.practicum.filmorate.storage.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exceptions.FilmNotFoundException;
-import ru.yandex.practicum.filmorate.exceptions.IdNotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.interfacesDao.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.FilmDao;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,11 +14,11 @@ import java.util.Map;
 
 @Repository
 @Slf4j
-public class InMemoryFilmStorage implements FilmStorage {
+public class InMemoryFilmDao implements FilmDao {
     private final Map<Long, Film> films;
     private long id = 1;
 
-    public InMemoryFilmStorage() {
+    public InMemoryFilmDao() {
         this.films = new HashMap<>();
     }
 
@@ -27,7 +26,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     public Film get(Long id) {
         Film film = films.get(id);
         if (film == null) {
-            throw new FilmNotFoundException(id.toString());
+            throw new NotFoundException(id.toString());
         }
         return film;
     }
@@ -65,17 +64,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public List<Film> getAll(int limit) {
+    public List<Film> getPopular(int limit) {
         return List.of();
-    }
-
-    @Override
-    public void likeFilm(Long userId, Long filmId) throws IdNotFoundException {
-
-    }
-
-    @Override
-    public void dislikeFilm(Long userId, Long filmId) throws IdNotFoundException {
-
     }
 }

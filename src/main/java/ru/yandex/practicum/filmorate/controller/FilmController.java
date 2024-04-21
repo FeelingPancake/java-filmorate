@@ -33,8 +33,8 @@ public class FilmController {
     @PostMapping
     @Validated({Marker.OnCreate.class})
     public Film addFilm(@Valid @RequestBody Film filmFromRequest) {
-        Long id = filmService.addFilm(filmFromRequest);
-        return filmService.getFilm(id);
+        return filmService.addFilm(filmFromRequest);
+
     }
 
     @PutMapping

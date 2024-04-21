@@ -2,11 +2,10 @@ package ru.yandex.practicum.filmorate.storage.memory;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.UpdateException;
-import ru.yandex.practicum.filmorate.exceptions.UserNotFoundException;
-import ru.yandex.practicum.filmorate.model.FriendShip;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.interfacesDao.UserStorage;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.UserDao;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -14,26 +13,24 @@ import java.util.Map;
 
 @Repository
 @Slf4j
-public class InMemoryUserStorage implements UserStorage {
+public class InMemoryUserDao implements UserDao {
     private final Map<Long, User> users;
     private long id = 1;
 
-    public InMemoryUserStorage() {
+    public InMemoryUserDao() {
         this.users = new HashMap<>();
     }
 
     @Override
     public User get(Long id) {
         if (!(users.get(id) == null)) {
-            throw new UserNotFoundException(id.toString());
+            throw new NotFoundException(id.toString());
         }
         return users.get(id);
     }
 
     @Override
     public Collection<User> getAll() {
-        // Не вижу особенного смысла делать копию в ArrayList
-        // так как объекты передаются по ссылке и в любом случае передам именно эти ссылки
         return users.values();
     }
 
@@ -62,13 +59,4 @@ public class InMemoryUserStorage implements UserStorage {
         return users.remove(id) != null;
     }
 
-    @Override
-    public boolean addFriend(long userId, long friendId) {
-        return false;
-    }
-
-    @Override
-    public boolean deleteFriend(FriendShip friendShip) {
-        return false;
-    }
 }

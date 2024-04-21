@@ -32,7 +32,6 @@ public class Film {
     private final List<Genre> genres;
     @NotNull
     private final Mpa mpa;
-    private final List<Like> likedBy;
     private int rating;
 
 }

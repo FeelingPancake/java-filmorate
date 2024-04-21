@@ -29,7 +29,7 @@ public class ExceptionApiHandler {
     }
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler({FilmNotFoundException.class, UserNotFoundException.class, IdNotFoundException.class})
+    @ExceptionHandler(NotFoundException.class)
     public ErrorResponse handleNotFoundExceptions(RuntimeException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.toString());
         errorResponse.log();

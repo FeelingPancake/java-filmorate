@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.GenreDao;
 
@@ -15,7 +16,11 @@ public class GenreService {
     }
 
     public Genre get(Long id) {
-        return genreDao.getGenreById(id);
+        if (genreDao.getGenreForId(id).isEmpty()) {
+            throw new NotFoundException(id.toString());
+        }
+
+        return genreDao.getGenreForId(id).get(0);
     }
 
     public List<Genre> getAll() {

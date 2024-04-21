@@ -8,14 +8,9 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.yandex.practicum.filmorate.exceptions.IdNotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.*;
-import ru.yandex.practicum.filmorate.storage.database.Dao.FriendShipDaoImpl;
-import ru.yandex.practicum.filmorate.storage.database.Dao.GenreDaoImpl;
-import ru.yandex.practicum.filmorate.storage.database.Dao.LikeDaoImpl;
-import ru.yandex.practicum.filmorate.storage.database.Dao.MpaDaoImpl;
-import ru.yandex.practicum.filmorate.storage.database.DaoStorage.FilmDbStorage;
-import ru.yandex.practicum.filmorate.storage.database.DaoStorage.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.database.Dao.*;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.*;
 
 import java.time.LocalDate;
@@ -31,14 +26,10 @@ import static org.junit.jupiter.api.Assertions.*;
 @AllArgsConstructor(onConstructor_ = @Autowired)
 public class FilmDbStorageTest {
     private final JdbcTemplate jdbcTemplate;
-    private final GenreDao genreDao;
-    private final MpaDao mpaDao;
-    private final LikeDao likeDao;
-    private final FriendShipDao friendShipDao;
 
     @Test
     public void testFindUserById() {
-
+        GenreDao genreDao = new GenreDaoImpl(jdbcTemplate);
         List<Genre> genreList = genreDao.get(1L);
 
         Film newFilm = Film.builder()
@@ -48,24 +39,26 @@ public class FilmDbStorageTest {
                 .description("Брюс против Снегга")
                 .releaseDate(LocalDate.of(1990, 1, 1))
                 .duration(130)
-                .genres(genreList)
                 .build();
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate, genreDao, mpaDao, likeDao);
+        FilmDaoImpl filmStorage = new FilmDaoImpl(jdbcTemplate);
         long id = filmStorage.add(newFilm);
-
+        genreDao.add(id, genreList);
+        List<Genre> genres = genreDao.get(id);
         Film savedFilm = filmStorage.get(id);
 
 
-        assertThat(savedFilm)
-                .isNotNull()
-                .usingRecursiveComparison()
-                .isEqualTo(filmStorage.get(id));
+        assertThat(savedFilm).isNotNull().usingRecursiveComparison().isEqualTo(filmStorage.get(id));
+
+        assertEquals(genreList, genres);
     }
 
     @Test
     public void testFindALlFilms() {
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate, genreDao, mpaDao, likeDao);
+        FilmDao filmStorage = new FilmDaoImpl(jdbcTemplate);
+        GenreDao genreDao = new GenreDaoImpl(jdbcTemplate);
+        MpaDao mpaDao = new MpaDaoImpl(jdbcTemplate);
         List<Long> expected = new ArrayList<>();
+
         Long mpaid = mpaDao.add("pg");
         for (int i = 1; i < 11; i++) {
             List<Genre> genreList = new ArrayList<>();
@@ -77,11 +70,10 @@ public class FilmDbStorageTest {
                     .description("Брюс против Снегга")
                     .releaseDate(LocalDate.of(1990, 1, i))
                     .duration(130)
-                    .genres(genreList)
                     .build();
-
             Long id = filmStorage.add(newFilm);
             expected.add(id);
+            genreDao.add(id, genreList);
         }
         List<Long> films = filmStorage.getAll().stream().map(Film::getId).toList();
 
@@ -89,12 +81,14 @@ public class FilmDbStorageTest {
 
         for (int i = 0; i < films.size(); i++) {
             assertThat(films.get(i)).isNotNull().usingRecursiveComparison().isEqualTo(expected.get(i));
+            assertEquals(new Genre(2L, "Драма"), genreDao.get(films.get(i)).get(0));
         }
+
+
     }
 
     @Test
     public void testUpdateFilm() {
-        List<Genre> genreList = genreDao.get(1L);
 
         Film newFilm = Film.builder()
                 .id(1L)
@@ -103,11 +97,10 @@ public class FilmDbStorageTest {
                 .description("Брюс против Снегга")
                 .releaseDate(LocalDate.of(1990, 1, 1))
                 .duration(130)
-                .genres(genreList)
                 .build();
 
 
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate, genreDao, mpaDao, likeDao);
+        FilmDaoImpl filmStorage = new FilmDaoImpl(jdbcTemplate);
         Long id = filmStorage.add(newFilm);
         Film updatedFilm = newFilm.toBuilder().id(id).name("Джон уик").build();
         Film oldFilm = filmStorage.get(id);
@@ -115,17 +108,14 @@ public class FilmDbStorageTest {
 
         Film savedFilm = filmStorage.get(id);
 
-        assertThat(oldFilm)
-                .isNotNull()
-                .usingRecursiveComparison()
-                .isNotEqualTo(savedFilm);
+        assertThat(oldFilm).isNotNull().usingRecursiveComparison().isNotEqualTo(savedFilm);
 
         assertSame(oldFilm.getId(), savedFilm.getId());
     }
 
     @Test
     public void testDeleteFilm() {
-
+        GenreDaoImpl genreDao = new GenreDaoImpl(jdbcTemplate);
         List<Genre> genreList = genreDao.get(1L);
 
         Film newFilm = Film.builder()
@@ -135,81 +125,82 @@ public class FilmDbStorageTest {
                 .description("Брюс против Снегга")
                 .releaseDate(LocalDate.of(1990, 1, 1))
                 .duration(130)
-                .genres(genreList)
                 .build();
 
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate, genreDao, mpaDao, likeDao);
+        FilmDaoImpl filmStorage = new FilmDaoImpl(jdbcTemplate);
         Long id = filmStorage.add(newFilm);
+        genreDao.add(id, genreList);
         filmStorage.delete(id);
 
-        assertThrows(IdNotFoundException.class, () -> {
+
+        assertThrows(NotFoundException.class, () -> {
             filmStorage.get(id);
         });
+
+        assertTrue(genreDao.get(id).isEmpty());
     }
 
     @Test
     public void testLikeFilm() {
-        UserStorage userStorage = new UserDbStorage(jdbcTemplate, friendShipDao);
+        UserDao userDao = new UserDaoImpl(jdbcTemplate);
+        LikeDao likeDao = new LikeDaoImpl(jdbcTemplate);
 
         User newUser = User.builder()
                 .id(1L)
                 .email("user@email.ru")
                 .login("vanya123")
                 .name("Ivan Petrov")
-                .birthday(LocalDate.of(1990, 1, 1)).build();
+                .birthday(LocalDate.of(1990, 1, 1))
+                .build();
 
-        Long id = userStorage.add(newUser);
+        Long id = userDao.add(newUser);
 
-        List<Genre> genreList = genreDao.get(1L);
 
         Film newFilm = Film.builder()
-                .id(1L)
-                .mpa(new Mpa(2L, "PG"))
+                .id(1L).mpa(new Mpa(2L, "PG"))
                 .name("Крепкий орешек")
                 .description("Брюс против Снегга")
                 .releaseDate(LocalDate.of(1990, 1, 1))
                 .duration(130)
-                .genres(genreList)
                 .build();
 
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate, genreDao, mpaDao, likeDao);
+        FilmDaoImpl filmStorage = new FilmDaoImpl(jdbcTemplate);
         Long idFilm = filmStorage.add(newFilm);
-        filmStorage.likeFilm(id, idFilm);
+        likeDao.add(new Like(id, idFilm));
         Film film2 = filmStorage.get(idFilm);
-        assertEquals(1, filmStorage.get(idFilm).getLikedBy().size());
-        assertEquals(new Like(id, idFilm), filmStorage.get(idFilm).getLikedBy().get(0));
+        assertEquals(1, likeDao.get(idFilm).size());
+        assertEquals(new Like(id, idFilm), likeDao.get(idFilm).get(0));
     }
 
     @Test
     public void testdislikeFilm() {
-        UserStorage userStorage = new UserDbStorage(jdbcTemplate, friendShipDao);
+        UserDao userDao = new UserDaoImpl(jdbcTemplate);
+        LikeDao likeDao = new LikeDaoImpl(jdbcTemplate);
 
         User newUser = User.builder()
                 .id(1L)
                 .email("user@email.ru")
                 .login("vanya123")
                 .name("Ivan Petrov")
-                .birthday(LocalDate.of(1990, 1, 1)).build();
+                .birthday(LocalDate.of(1990, 1, 1))
+                .build();
 
-        Long id = userStorage.add(newUser);
-        List<Genre> genreList = genreDao.getGenresIdForFilm(id).stream().map(x -> new Genre(x, null)).toList();
+        Long id = userDao.add(newUser);
 
         Film newFilm = Film.builder()
-                .id(1L)
-                .mpa(new Mpa(2L, "PG"))
+                .id(1L).mpa(new Mpa(2L, "PG"))
                 .name("Крепкий орешек")
                 .description("Брюс против Снегга")
                 .releaseDate(LocalDate.of(1990, 1, 1))
                 .duration(130)
-                .genres(genreList)
                 .build();
 
-        FilmDbStorage filmStorage = new FilmDbStorage(jdbcTemplate, genreDao, mpaDao, likeDao);
+        FilmDaoImpl filmStorage = new FilmDaoImpl(jdbcTemplate);
         Long idFilm = filmStorage.add(newFilm);
-        filmStorage.likeFilm(id, idFilm);
-        filmStorage.dislikeFilm(id, idFilm);
+        likeDao.add(new Like(id, idFilm));
+        likeDao.delete(new Like(id, idFilm));
 
-        assertTrue(filmStorage.get(idFilm).getLikedBy().isEmpty());
+        assertTrue(likeDao.get(idFilm).isEmpty());
     }
 
 

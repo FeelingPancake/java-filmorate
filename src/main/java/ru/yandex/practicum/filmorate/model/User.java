@@ -1,16 +1,15 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 import ru.yandex.practicum.filmorate.annotations.Marker;
 
 import javax.validation.constraints.*;
 import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-@Value
+@Data
 @Builder(toBuilder = true)
 public class User {
     @NotNull(groups = Marker.OnUpdate.class, message = "ID должен присутствовать при обновлении объекта")
@@ -26,7 +25,6 @@ public class User {
     @PastOrPresent(message = "Нельзя родиться в будущем")
     @NotNull
     LocalDate birthday;
-    List<FriendShip> friendsList;
 
     public Map<String, Object> toMap() {
         Map<String, Object> values = new HashMap<>();

@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.integrityTests;
 
 import lombok.AllArgsConstructor;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,11 +8,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.yandex.practicum.filmorate.exceptions.IdNotFoundException;
-import ru.yandex.practicum.filmorate.model.FriendShip;
+import ru.yandex.practicum.filmorate.exceptions.AlreadyExistsException;
+import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
+import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.database.Dao.FriendShipDaoImpl;
-import ru.yandex.practicum.filmorate.storage.database.DaoStorage.UserDbStorage;
+import ru.yandex.practicum.filmorate.storage.database.Dao.UserDaoImpl;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.FriendShipDao;
 
 import java.time.LocalDate;
@@ -29,24 +29,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @AllArgsConstructor(onConstructor_ = @Autowired)
 public class UserDbStorageTest {
     private final JdbcTemplate jdbcTemplate;
-    private final FriendShipDao friendShip;
-
-    @AfterEach
-    void reset() {
-        String sql = "ALTER TABLE users ALTER COLUMN id RESTART WITH 1;";
-
-        jdbcTemplate.execute(sql);
-    }
 
     @Test
     public void testFindUserById() {
         User newUser = User.builder()
-                .id(1L)
                 .email("user@email.ru")
                 .login("vanya123")
                 .name("Ivan Petrov")
                 .birthday(LocalDate.of(1990, 1, 1)).build();
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate, friendShip);
+        UserDaoImpl userStorage = new UserDaoImpl(jdbcTemplate);
         Long id = userStorage.add(newUser);
 
         User savedUser = userStorage.get(id);
@@ -60,11 +51,10 @@ public class UserDbStorageTest {
 
     @Test
     public void testFindAllUsers() {
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate, friendShip);
+        UserDaoImpl userStorage = new UserDaoImpl(jdbcTemplate);
         List<Long> list = new ArrayList<>();
         for (int i = 1; i < 11; i++) {
             User newUser = User.builder()
-                    .id((long) i)
                     .email("user@email.ru")
                     .login("vanya123" + i)
                     .name("Ivan Petrov")
@@ -73,27 +63,27 @@ public class UserDbStorageTest {
             list.add(id);
         }
 
-        List<Long> users = userStorage.getAll().stream().map(x -> x.getId()).toList();
+        List<Long> users = userStorage.getAll().stream().map(User::getId).toList();
 
         Assertions.assertIterableEquals(list, users);
 
         for (int i = 0; i < users.size(); i++) {
-            assertThat(userStorage.get(users.get(i))).isNotNull().usingRecursiveComparison().isEqualTo(userStorage.get(list.get(i)));
+            assertThat(userStorage.get(users.get(i))).isNotNull()
+                    .usingRecursiveComparison().isEqualTo(userStorage.get(list.get(i)));
         }
     }
 
     @Test
     public void testUpdateUser() {
         User newUser = User.builder()
-                .id(1L)
                 .email("user@email.ru")
                 .login("vanya123")
                 .name("Ivan Petrov")
                 .birthday(LocalDate.of(1990, 1, 1)).build();
 
-        User updatedUser = newUser.toBuilder().name("Petr Ivanov").build();
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate, friendShip);
+        UserDaoImpl userStorage = new UserDaoImpl(jdbcTemplate);
         Long id = userStorage.add(newUser);
+        User updatedUser = newUser.toBuilder().id(id).name("Petr Ivanov").build();
         User oldUser = userStorage.get(id);
 
         Long newId = userStorage.update(updatedUser);
@@ -110,23 +100,23 @@ public class UserDbStorageTest {
     @Test
     public void testDeleteUser() {
         User newUser = User.builder()
-                .id(1L)
                 .email("user@email.ru")
                 .login("vanya123")
                 .name("Ivan Petrov")
                 .birthday(LocalDate.of(1990, 1, 1)).build();
 
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate, friendShip);
+        UserDaoImpl userStorage = new UserDaoImpl(jdbcTemplate);
         Long id = userStorage.add(newUser);
         userStorage.delete(id);
 
-        assertThrows(IdNotFoundException.class, () -> {
+        assertThrows(NotFoundException.class, () -> {
             userStorage.get(1L);
         });
     }
 
     @Test
     public void testAddingFriendToUserWithDefaultValueFalse() {
+        FriendShipDao friendship = new FriendShipDaoImpl(jdbcTemplate);
         User newUser = User.builder()
                 .id(1L)
                 .email("user@email.ru")
@@ -140,22 +130,23 @@ public class UserDbStorageTest {
                 .name("Sasha Petrov")
                 .birthday(LocalDate.of(1991, 2, 1)).build();
 
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate, friendShip);
+        UserDaoImpl userStorage = new UserDaoImpl(jdbcTemplate);
         Long userId = userStorage.add(newUser);
         Long friendId = userStorage.add(friend);
 
-        userStorage.addFriend(userId, friendId);
+        friendship.add(userId, friendId);
 
-        List<FriendShip> friendShips = userStorage.get(userId).getFriendsList();
-        List<FriendShip> expected = new ArrayList<>();
-        expected.add(new FriendShip(userId, friendId, false));
+        List<Friendship> friendships = friendship.get(userId);
+        List<Friendship> expected = new ArrayList<>();
+        expected.add(new Friendship(userId, friendId, false));
 
-        assertThat(userStorage.get(friendId).getFriendsList()).isEmpty();
-        assertIterableEquals(expected, friendShips);
+        assertEquals(friendId, friendships.get(0).friendId());
+        assertIterableEquals(expected, friendships);
     }
 
     @Test
     public void testDeleteFriend() {
+        FriendShipDao friendship = new FriendShipDaoImpl(jdbcTemplate);
         User newUser = User.builder()
                 .id(1L)
                 .email("user@email.ru")
@@ -169,18 +160,19 @@ public class UserDbStorageTest {
                 .name("Sasha Petrov")
                 .birthday(LocalDate.of(1991, 2, 1)).build();
 
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate, friendShip);
+        UserDaoImpl userStorage = new UserDaoImpl(jdbcTemplate);
         Long userId = userStorage.add(newUser);
         Long friendId = userStorage.add(friend);
 
-        userStorage.addFriend(userId, friendId);
-        userStorage.deleteFriend(new FriendShip(userId, friendId, false));
+        friendship.add(userId, friendId);
+        friendship.delete(userId, friendId);
 
-        assertThat(userStorage.get(userId).getFriendsList()).isEmpty();
+        assertTrue(friendship.get(userId).isEmpty());
     }
 
     @Test
     public void testAddFriendTwoTimes() {
+        FriendShipDao friendship = new FriendShipDaoImpl(jdbcTemplate);
         User newUser = User.builder()
                 .id(1L)
                 .email("user@email.ru")
@@ -200,16 +192,13 @@ public class UserDbStorageTest {
                 .name("Faruh al Hazred")
                 .birthday(LocalDate.of(1991, 4, 12)).build();
 
-        UserDbStorage userStorage = new UserDbStorage(jdbcTemplate, friendShip);
+        UserDaoImpl userStorage = new UserDaoImpl(jdbcTemplate);
         Long userId = userStorage.add(newUser);
         Long friendId1 = userStorage.add(friend1);
-        Long friendId2 = userStorage.add(friend2);
 
-        userStorage.addFriend(userId, friendId1);
+        friendship.add(userId, friendId1);
 
-        assertFalse(userStorage.addFriend(userId, friendId1));
+        assertThrows(AlreadyExistsException.class, () -> friendship.add(userId, friendId1));
     }
-
-
 }
 
