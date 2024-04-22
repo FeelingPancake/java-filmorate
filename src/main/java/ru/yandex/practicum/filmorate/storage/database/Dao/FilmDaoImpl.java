@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.database.Dao;
 
 import org.springframework.context.annotation.Primary;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
@@ -32,11 +31,12 @@ public class FilmDaoImpl implements FilmDao {
         String sqlQuery = "SELECT * FROM films " +
                 "JOIN film_age_ratings age ON films.age_rating = age.rating_id " +
                 "WHERE films.id = ?";
-        try {
-            return jdbcTemplate.queryForObject(sqlQuery, this::mapRowToFilm, id);
-        } catch (DataAccessException e) {
+
+        List<Film> film = jdbcTemplate.query(sqlQuery, this::mapRowToFilm, id);
+        if (film.isEmpty()) {
             throw new NotFoundException(id.toString());
         }
+        return film.get(0);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class FilmDaoImpl implements FilmDao {
                 .withTableName("films")
                 .usingGeneratedKeyColumns("id");
 
-        Long id =  simpleJdbcInsert.executeAndReturnKey(Map.of("name", obj.getName(),
+        Long id = simpleJdbcInsert.executeAndReturnKey(Map.of("name", obj.getName(),
                 "description", obj.getDescription(),
                 "release_date", obj.getReleaseDate(),
                 "duration", obj.getDuration(),

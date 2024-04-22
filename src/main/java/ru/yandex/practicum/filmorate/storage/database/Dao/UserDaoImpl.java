@@ -28,11 +28,15 @@ public class UserDaoImpl implements UserDao {
     public User get(Long id) {
         String sqlQuery = "SELECT * FROM users WHERE id = ?";
 
-        try {
-            return jdbcTemplate.queryForObject(sqlQuery, this::mapRowToUser, id);
-        } catch (DataAccessException e) {
-            throw new NotFoundException(id.toString());
-        }
+        return jdbcTemplate.queryForObject(sqlQuery, this::mapRowToUser, id);
+    }
+
+    @Override
+    public List<User> getFriends(Long id) {
+        String sql = "SELECT * FROM users AS u " +
+                "JOIN user_friendships f ON (u.id = f.user_id AND f.friend_id = ? AND f.is_confirmed = TRUE) " +
+                "OR (u.id = f.friend_id AND f.user_id = ?)";
+        return jdbcTemplate.query(sql, this::mapRowToUser, id, id);
     }
 
     @Override

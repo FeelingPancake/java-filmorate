@@ -1,20 +1,16 @@
 package ru.yandex.practicum.filmorate.storage.database.Dao;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import org.springframework.jdbc.core.simple.SimpleJdbcInsert;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
-import ru.yandex.practicum.filmorate.exceptions.SqlExecuteException;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.GenreDao;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 public class GenreDaoImpl implements GenreDao {
@@ -32,8 +28,29 @@ public class GenreDaoImpl implements GenreDao {
                 "WHERE film_genres.film_id = ? " +
                 "GROUP BY film_genres.genre_id, film_genres.film_id, genres.genre_name;";
 
-            List<Genre> genres = jdbcTemplate.query(sql, this::mapRowToGenre, filmId);
+        return jdbcTemplate.query(sql, this::mapRowToGenre, filmId);
+    }
+
+    @Override
+    public Map<Long, List<Genre>> getAll() {
+        String sql = "SELECT * FROM film_genres " +
+                "JOIN genres ON film_genres.genre_id = genres.genre_id " +
+                "GROUP BY film_genres.genre_id, film_genres.film_id, genres.genre_name;";
+
+        return jdbcTemplate.query(sql, (ResultSet rs) -> {
+            Map<Long, List<Genre>> genres = new HashMap<>();
+
+            while (rs.next()) {
+                long filmId = rs.getLong("film_id");
+                long genreId = rs.getLong("genre_id");
+                String genreName = rs.getString("genre_name");
+
+                Genre genre = new Genre(genreId, genreName);
+
+                genres.computeIfAbsent(filmId, k -> new ArrayList<>()).add(genre);
+            }
             return genres;
+        });
     }
 
     @Override
@@ -43,11 +60,21 @@ public class GenreDaoImpl implements GenreDao {
         List<Map<String, Long>> list = new HashSet<>(genre).stream().map(x ->
                 Map.of("film_id", filmId, "genre_id", x.id())).toList();
 
-        try {
-          return simpleJdbcInsert.executeBatch(SqlParameterSourceUtils.createBatch(list)).length > 0;
-        } catch (DataIntegrityViolationException e) {
-            throw new SqlExecuteException(simpleJdbcInsert.toString());
-        }
+        return simpleJdbcInsert.executeBatch(SqlParameterSourceUtils.createBatch(list)).length > 0;
+    }
+
+    @Override
+    public boolean update(Long filmId, List<Genre> genre) {
+        String sql = "DELETE from film_genres WHERE film_id = ?";
+
+        jdbcTemplate.update(sql, filmId);
+
+        SimpleJdbcInsert simpleJdbcInsert = new SimpleJdbcInsert(jdbcTemplate).withTableName("film_genres");
+
+        List<Map<String, Long>> list = new HashSet<>(genre).stream().map(x ->
+                Map.of("film_id", filmId, "genre_id", x.id())).toList();
+
+        return simpleJdbcInsert.executeBatch(SqlParameterSourceUtils.createBatch(list)).length > 0;
     }
 
     @Override
@@ -100,6 +127,6 @@ public class GenreDaoImpl implements GenreDao {
     }
 
     private Genre mapRowToGenre(ResultSet resultSet, int rowNum) throws SQLException {
-        return new Genre(resultSet.getLong("genre_id"),resultSet.getString("genre_name"));
+        return new Genre(resultSet.getLong("genre_id"), resultSet.getString("genre_name"));
     }
 }

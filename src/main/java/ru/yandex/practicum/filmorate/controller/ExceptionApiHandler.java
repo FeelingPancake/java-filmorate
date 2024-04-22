@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,7 +31,7 @@ public class ExceptionApiHandler {
     }
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler(NotFoundException.class)
+    @ExceptionHandler({NotFoundException.class, DataAccessException.class})
     public ErrorResponse handleNotFoundExceptions(RuntimeException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.toString());
         errorResponse.log();
@@ -37,7 +39,7 @@ public class ExceptionApiHandler {
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(SqlExecuteException.class)
+    @ExceptionHandler({SqlExecuteException.class, DataIntegrityViolationException.class})
     public ErrorResponse handleSqlExecutionExceptions(Throwable ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.toString());
         errorResponse.log();

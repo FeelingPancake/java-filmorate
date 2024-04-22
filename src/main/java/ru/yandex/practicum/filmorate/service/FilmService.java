@@ -1,9 +1,10 @@
 package ru.yandex.practicum.filmorate.service;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.SqlExecuteException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Like;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.FilmDao;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.GenreDao;
@@ -12,6 +13,8 @@ import ru.yandex.practicum.filmorate.storage.interfacesDao.MpaDao;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class FilmService {
@@ -35,18 +38,28 @@ public class FilmService {
     }
 
     public Collection<Film> getFilms() {
-        return filmDao.getAll().stream().map(film ->
-                film.toBuilder().genres(genreDao.get(film.getId())).build()).toList();
+        List<Film> films = (List<Film>) filmDao.getAll();
+        Map<Long, List<Genre>> genres = genreDao.getAll();
+
+        Map<Long, List<Genre>> genresMap = genreDao.getAll()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return films.stream()
+                .map(film -> film.toBuilder().genres(genresMap.getOrDefault(film.getId(), List.of())).build())
+                .collect(Collectors.toList());
     }
 
     public Film addFilm(Film film) {
 
         try {
             mpaDao.get(film.getMpa().id());
-        } catch (NotFoundException e) {
+        } catch (DataAccessException e) {
             throw new SqlExecuteException(e.getMessage());
         }
         Long id = filmDao.add(film);
+
         if (!(film.getGenres() == null) && !film.getGenres().isEmpty()) {
             genreDao.add(id, film.getGenres());
         }
@@ -55,6 +68,10 @@ public class FilmService {
     }
 
     public Long updateFilm(Film film) {
+        if (!(film.getGenres() == null) && !film.getGenres().isEmpty()) {
+            genreDao.update(film.getId(), film.getGenres());
+        }
+
         return filmDao.update(film);
     }
 

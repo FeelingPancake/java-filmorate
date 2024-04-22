@@ -36,13 +36,7 @@ public class UserService {
 
     public List<User> getFriendList(long userId) {
         userDao.get(userId);
-        return friendDao.get(userId).stream().map(friendship -> {
-            if (userId == friendship.userId()) {
-                return userDao.get(friendship.friendId());
-            } else {
-                return userDao.get(friendship.userId());
-            }
-        }).toList();
+        return userDao.getFriends(userId);
     }
 
     public boolean addFriend(long userId, long friendId) {
@@ -56,7 +50,7 @@ public class UserService {
         userDao.get(userId);
         userDao.get(friendId);
 
-       return friendDao.delete(userId, friendId);
+        return friendDao.delete(userId, friendId);
     }
 
     public List<User> findCommonFriends(long userId1, long userId2) {
