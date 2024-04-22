@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.yandex.practicum.filmorate.exceptions.AlreadyExistsException;
-import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.database.Dao.FriendShipDaoImpl;
@@ -109,7 +109,7 @@ public class UserDbStorageTest {
         Long id = userStorage.add(newUser);
         userStorage.delete(id);
 
-        assertThrows(NotFoundException.class, () -> {
+        assertThrows(DataAccessException.class, () -> {
             userStorage.get(1L);
         });
     }
@@ -198,7 +198,7 @@ public class UserDbStorageTest {
 
         friendship.add(userId, friendId1);
 
-        assertThrows(AlreadyExistsException.class, () -> friendship.add(userId, friendId1));
+        assertThrows(DataIntegrityViolationException.class, () -> friendship.add(userId, friendId1));
     }
 }
 

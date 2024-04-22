@@ -34,13 +34,7 @@ public class FriendShipDaoImpl implements FriendShipDao {
                 .withTableName("user_friendships")
                 .usingGeneratedKeyColumns("is_confirmed");
 
-        try {
-
-            return simpleJdbcInsert.execute(Map.of("user_id", userId, "friend_id", friendId)) > 0;
-        } catch (DataIntegrityViolationException e) {
-
-            throw new AlreadyExistsException("userId: " + userId.toString() + " friendId: " + friendId.toString());
-        }
+        return simpleJdbcInsert.execute(Map.of("user_id", userId, "friend_id", friendId)) > 0;
     }
 
     @Override

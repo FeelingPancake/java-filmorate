@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.storage.interfacesDao.UserDao;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Repository
@@ -59,4 +60,8 @@ public class InMemoryUserDao implements UserDao {
         return users.remove(id) != null;
     }
 
+    @Override
+    public List<User> getFriends(Long id) {
+        return List.of();
+    }
 }
