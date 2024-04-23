@@ -54,7 +54,7 @@ public class UserService {
     }
 
     public List<User> findCommonFriends(long userId1, long userId2) {
-        return friendDao.getCommonFriends(userId1, userId2).stream().map(userDao::get).toList();
+        return userDao.getCommonFriendsUsers(userId1, userId2);
     }
 
 }

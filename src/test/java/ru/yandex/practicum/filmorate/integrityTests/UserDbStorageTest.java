@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.yandex.practicum.filmorate.model.Friendship;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.database.Dao.FriendShipDaoImpl;
 import ru.yandex.practicum.filmorate.storage.database.Dao.UserDaoImpl;
@@ -136,11 +135,11 @@ public class UserDbStorageTest {
 
         friendship.add(userId, friendId);
 
-        List<Friendship> friendships = friendship.get(userId);
-        List<Friendship> expected = new ArrayList<>();
-        expected.add(new Friendship(userId, friendId, false));
+        List<User> friendships = userStorage.getFriends(userId);
+        List<User> expected = new ArrayList<>();
+        expected.add(userStorage.get(friendId));
 
-        assertEquals(friendId, friendships.get(0).friendId());
+        assertEquals(friendId, friendships.get(0).getId());
         assertIterableEquals(expected, friendships);
     }
 

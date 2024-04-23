@@ -27,7 +27,6 @@ public class GenresController {
 
     @GetMapping("/{id}")
     public Genre getGenre(@PathVariable Long id) {
-        // На самом деле выглядит небольшим издевательством список id жанров постмана - не соответствует указаному в ТЗ
         return genreService.get(id);
     }
 

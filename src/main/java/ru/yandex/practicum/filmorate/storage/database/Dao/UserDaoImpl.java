@@ -40,6 +40,17 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
+    public List<User> getCommonFriendsUsers(Long userId1, Long userId2) {
+        String sql = "SELECT u.* " +
+                "FROM users u " +
+                "JOIN user_friendships uf1 ON u.id = uf1.friend_id " +
+                "JOIN user_friendships uf2 ON uf1.friend_id = uf2.friend_id " +
+                "WHERE uf1.user_id = ? AND uf2.user_id = ?";
+
+        return jdbcTemplate.query(sql, this::mapRowToUser, userId1, userId2);
+    }
+
+    @Override
     public List<User> getAll() {
         String sqlQuery = "SELECT * FROM users";
 

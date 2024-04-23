@@ -6,6 +6,8 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.MpaDao;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -19,12 +21,11 @@ public class MpaDaoImpl implements MpaDao {
 
 
     @Override
-    public Mpa get(Long id) {
+    public List<Mpa> get(Long id) {
         String sql = "SELECT * FROM film_age_ratings WHERE rating_id = ?";
 
-        return jdbcTemplate.queryForObject(sql,
-                (rs, rn) -> new Mpa(rs.getLong("rating_id"),
-                        rs.getString("rating_name")), id);
+        return jdbcTemplate.query(sql, this::mapRowToMpa, id);
+
     }
 
     @Override
@@ -42,5 +43,9 @@ public class MpaDaoImpl implements MpaDao {
 
         return simpleJdbcInsert.executeAndReturnKey(Map.of("rating_name", name)).longValue();
 
+    }
+
+    private Mpa mapRowToMpa(ResultSet resultSet, int rowNum) throws SQLException {
+        return new Mpa(resultSet.getLong("rating_id"), resultSet.getString("rating_name"));
     }
 }

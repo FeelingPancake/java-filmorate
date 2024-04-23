@@ -65,7 +65,7 @@ public class FilmDbStorageTest {
             genreList.add(new Genre(2L, "Драма"));
             Film newFilm = Film.builder()
                     .id((long) i)
-                    .mpa(mpaDao.get(mpaid))
+                    .mpa(mpaDao.get(mpaid).get(0))
                     .name("Крепкий орешек" + i)
                     .description("Брюс против Снегга")
                     .releaseDate(LocalDate.of(1990, 1, i))

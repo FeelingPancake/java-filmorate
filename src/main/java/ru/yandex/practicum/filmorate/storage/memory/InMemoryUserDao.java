@@ -64,4 +64,9 @@ public class InMemoryUserDao implements UserDao {
     public List<User> getFriends(Long id) {
         return List.of();
     }
+
+    @Override
+    public List<User> getCommonFriendsUsers(Long userId1, Long userId2) {
+        return List.of();
+    }
 }

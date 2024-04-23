@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface MpaDao {
 
-    Mpa get(Long id);
+    List<Mpa> get(Long id);
 
     List<Mpa> getAll();
 

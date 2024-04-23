@@ -21,9 +21,10 @@ public class FriendShipDaoImpl implements FriendShipDao {
 
     @Override
     public List<Friendship> get(Long id) {
-        String sql = "SELECT * FROM user_friendships WHERE user_id = ? OR (friend_id = ? AND is_confirmed = TRUE)";
+        String sql = "SELECT * FROM users u " +
+                "JOIN user_friendships uf ON u.id = uf.user_id AND uf.user_id = ? and uf.is_confirmed = TRUE";
 
-        return jdbcTemplate.query(sql, this::mapRowToFriendShip, id, id);
+        return jdbcTemplate.query(sql, this::mapRowToFriendShip, id);
     }
 
     @Override

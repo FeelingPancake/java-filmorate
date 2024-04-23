@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exceptions.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.interfacesDao.MpaDao;
 
@@ -16,7 +17,11 @@ public class MpaService {
     }
 
     public Mpa get(Long id) {
-        return mpaDao.get(id);
+        List<Mpa> mpa = mpaDao.get(id);
+        if (mpa.isEmpty()) {
+            throw new NotFoundException(id.toString());
+        }
+        return mpa.get(0);
     }
 
     public List<Mpa> getAll() {
