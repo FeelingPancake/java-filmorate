@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,7 +15,7 @@ import ru.yandex.practicum.filmorate.model.ErrorResponse;
 @Slf4j
 public class ExceptionApiHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ExceptionHandler({MethodArgumentNotValidException.class})
     public ErrorResponse handleValidationExceptions(MethodArgumentNotValidException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.toString());
         errorResponse.log();
@@ -29,8 +31,16 @@ public class ExceptionApiHandler {
     }
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler({FilmNotFoundException.class, UserNotFoundException.class})
+    @ExceptionHandler({NotFoundException.class, DataAccessException.class})
     public ErrorResponse handleNotFoundExceptions(RuntimeException ex) {
+        ErrorResponse errorResponse = new ErrorResponse(ex.toString());
+        errorResponse.log();
+        return errorResponse;
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({SqlExecuteException.class, DataIntegrityViolationException.class})
+    public ErrorResponse handleSqlExecutionExceptions(Throwable ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.toString());
         errorResponse.log();
         return errorResponse;
@@ -43,4 +53,6 @@ public class ExceptionApiHandler {
         errorResponse.log();
         return errorResponse;
     }
+
+
 }

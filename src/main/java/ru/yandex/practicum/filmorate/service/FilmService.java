@@ -1,59 +1,94 @@
 package ru.yandex.practicum.filmorate.service;
 
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exceptions.SqlExecuteException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Like;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.FilmDao;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.GenreDao;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.LikeDao;
+import ru.yandex.practicum.filmorate.storage.interfacesDao.MpaDao;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class FilmService {
-    private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+    private final FilmDao filmDao;
+    private final LikeDao likeDao;
+    private final GenreDao genreDao;
+    private final MpaDao mpaDao;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
-        this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
+    public FilmService(FilmDao filmDao, LikeDao likeDao, GenreDao genreDao, MpaDao mpaDao) {
+        this.filmDao = filmDao;
+        this.likeDao = likeDao;
+        this.genreDao = genreDao;
+        this.mpaDao = mpaDao;
     }
 
     public Film getFilm(Long id) {
-        return filmStorage.get(id);
+        Film film = filmDao.get(id);
+
+        return film.toBuilder().genres(genreDao.get(id)).build();
     }
 
     public Collection<Film> getFilms() {
-        return filmStorage.getAll();
+        List<Film> films = (List<Film>) filmDao.getAll();
+
+        Map<Long, List<Genre>> genresMap = genreDao.getAll()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return films.stream()
+                .map(film -> film.toBuilder().genres(genresMap.getOrDefault(film.getId(), List.of())).build())
+                .collect(Collectors.toList());
     }
 
     public Film addFilm(Film film) {
-        return filmStorage.add(film);
+
+        if (mpaDao.get(film.getMpa().id()).isEmpty()) {
+            throw new SqlExecuteException(film.getMpa().toString());
+        }
+
+        Long id = filmDao.add(film);
+
+        if (!(film.getGenres() == null) && !film.getGenres().isEmpty()) {
+            genreDao.add(id, film.getGenres());
+        }
+
+        return film.toBuilder().id(id).genres(genreDao.get(id)).build();
     }
 
-    public Film updateFilm(Film film) {
-        return filmStorage.update(film);
+    public Long updateFilm(Film film) {
+        if (!(film.getGenres() == null) && !film.getGenres().isEmpty()) {
+            genreDao.update(film.getId(), film.getGenres());
+        }
+
+        return filmDao.update(film);
     }
 
-    public void likeFilm(Long filmId, Long userId) {
-        Film film = filmStorage.get(filmId);
-        User user = userStorage.get(userId);
-
-        film.like(userId);
+    public void likeFilm(Long userId, Long filmId) {
+        likeDao.add(new Like(userId, filmId));
     }
 
     public void dislikeFilm(Long filmId, Long userId) {
-        Film film = filmStorage.get(filmId);
-        User user = userStorage.get(userId);
-
-        film.dislike(userId);
+        likeDao.delete(new Like(userId, filmId));
     }
 
     public List<Film> getPopularFilms(int count) {
-        return filmStorage.getAll().stream()
-                .sorted((f1, f2) -> Integer.compare(f2.getRating(), f1.getRating()))
-                .limit(count)
+
+        List<Film> popular = filmDao.getPopular(count);
+        Map<Long, List<Genre>> genresMap = genreDao.getAll()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return popular.stream()
+                .map(film -> film.toBuilder().genres(genresMap.getOrDefault(film.getId(), List.of())).build())
                 .collect(Collectors.toList());
     }
 }

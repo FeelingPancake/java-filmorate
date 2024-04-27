@@ -7,9 +7,9 @@ public interface ModelStorage<T> {
 
     Collection<T> getAll();
 
-    T add(T obj);
+    Long add(T obj);
 
-    T update(T obj);
+    Long update(T obj);
 
-    T delete(Long id);
+    boolean delete(Long id);
 }
